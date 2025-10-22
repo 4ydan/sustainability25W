@@ -23,12 +23,16 @@ The goal is to generate descriptive captions for images while measuring and repo
 1. Clone the repository:
 ```bash
 git clone https://github.com/4ydan/sustainability25W.git
-cd sustainability25W
+cd sustainability25W/ass1
 ```
 
-2. Install dependencies:
+2. Install dependencies using `uv`:
 ```bash
-pip install -r requirements.txt
+# Install uv if you haven't already
+pip install uv
+
+# Install project dependencies
+uv sync
 ```
 
 3. (Optional) For SPICE metric, you need Java:
@@ -69,19 +73,22 @@ Run with `--use-dummy` flag to test the pipeline without downloading the full da
 
 Run captioning on COCO validation set:
 ```bash
-python run_captioning.py
+cd ass1
+uv run python run_captioning.py
 ```
 
 ### With Dummy Dataset (Testing)
 
 ```bash
-python run_captioning.py --use-dummy --max-samples 50
+cd ass1
+uv run python run_captioning.py --use-dummy --max-samples 50
 ```
 
 ### Custom Options
 
 ```bash
-python run_captioning.py \
+cd ass1
+uv run python run_captioning.py \
     --data-dir ./data \
     --output-dir ./results \
     --model-name Salesforce/blip-image-captioning-base \
@@ -158,23 +165,29 @@ Edit `config.py` to modify:
 
 ```
 sustainability25W/
-├── run_captioning.py          # Main experiment script
-├── config.py                  # Configuration settings
-├── captioning_model.py        # Model wrapper
-├── dataset_loader.py          # Dataset loading utilities
-├── efficiency_metrics.py      # Efficiency monitoring
-├── evaluation_metrics.py      # Evaluation metrics (CIDEr, BLEU, SPICE)
-├── requirements.txt           # Python dependencies
 ├── README.md                  # This file
-└── results/                   # Output directory
-    ├── predictions.json
-    ├── random_samples.json
-    └── metrics.json
+└── ass1/                      # Assignment 1 implementation
+    ├── pyproject.toml         # uv project configuration
+    ├── run_captioning.py      # Main experiment script
+    ├── config.py              # Configuration settings
+    ├── captioning_model.py    # Model wrapper
+    ├── dataset_loader.py      # Dataset loading utilities
+    ├── efficiency_metrics.py  # Efficiency monitoring
+    ├── evaluation_metrics.py  # Evaluation metrics (CIDEr, BLEU, SPICE)
+    ├── test_basic.py          # Test suite
+    ├── example_usage.py       # Usage examples
+    ├── USAGE.md               # Detailed usage guide
+    ├── ASSIGNMENT_SUMMARY.md  # Assignment summary
+    └── results/               # Output directory
+        ├── predictions.json
+        ├── random_samples.json
+        └── metrics.json
 ```
 
 ## Requirements
 
 - Python 3.8+
+- `uv` package manager
 - PyTorch 2.0+
 - CUDA-capable GPU (optional, but recommended)
 - ~2GB GPU VRAM for inference

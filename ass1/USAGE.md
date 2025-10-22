@@ -5,8 +5,14 @@
 ### 1. Setup Environment
 
 ```bash
-# Install dependencies
-pip install -r requirements.txt
+# Install uv if you haven't already
+pip install uv
+
+# Navigate to ass1 directory
+cd ass1
+
+# Install project dependencies
+uv sync
 
 # For SPICE metric (optional), install Java
 sudo apt-get install default-jre  # Ubuntu/Debian
@@ -19,7 +25,8 @@ brew install openjdk  # macOS
 Test the pipeline without downloading the full COCO dataset:
 
 ```bash
-python run_captioning.py --use-dummy --max-samples 50
+cd ass1
+uv run python run_captioning.py --use-dummy --max-samples 50
 ```
 
 This will:
@@ -50,7 +57,8 @@ cd ..
 Then run the experiment:
 
 ```bash
-python run_captioning.py --max-samples 5000
+cd ass1
+uv run python run_captioning.py --max-samples 5000
 ```
 
 ## Command-Line Options
@@ -76,7 +84,8 @@ python run_captioning.py --max-samples 5000
 ### Example 1: Quick Test (No Dataset Download)
 
 ```bash
-python run_captioning.py --use-dummy --max-samples 10
+cd ass1
+uv run python run_captioning.py --use-dummy --max-samples 10
 ```
 
 Expected output:
@@ -103,13 +112,15 @@ BLEU-1:                 0.7234
 ### Example 2: Subset of COCO (1000 images)
 
 ```bash
-python run_captioning.py --max-samples 1000
+cd ass1
+uv run python run_captioning.py --max-samples 1000
 ```
 
 ### Example 3: Full COCO Validation Set
 
 ```bash
-python run_captioning.py --max-samples 5000
+cd ass1
+uv run python run_captioning.py --max-samples 5000
 ```
 
 This will take approximately:
@@ -119,7 +130,8 @@ This will take approximately:
 ### Example 4: CPU-only Mode
 
 ```bash
-python run_captioning.py --use-dummy --max-samples 20 --device cpu
+cd ass1
+uv run python run_captioning.py --use-dummy --max-samples 20 --device cpu
 ```
 
 ## Understanding the Output
@@ -220,11 +232,12 @@ After running, check the `results/` directory:
 ### Issue: CUDA Out of Memory
 
 ```bash
+cd ass1
 # Solution 1: Use CPU
-python run_captioning.py --device cpu
+uv run python run_captioning.py --device cpu
 
 # Solution 2: Process fewer images
-python run_captioning.py --max-samples 100
+uv run python run_captioning.py --max-samples 100
 ```
 
 ### Issue: SPICE Metric Not Available
@@ -239,8 +252,9 @@ Or run without SPICE - CIDEr and BLEU will still be reported.
 ### Issue: COCO Dataset Not Found
 
 ```bash
+cd ass1
 # Use dummy dataset instead
-python run_captioning.py --use-dummy
+uv run python run_captioning.py --use-dummy
 
 # Or download COCO following the dataset setup instructions
 ```
@@ -263,7 +277,8 @@ If much slower:
 Use a different model from HuggingFace:
 
 ```bash
-python run_captioning.py \
+cd ass1
+uv run python run_captioning.py \
     --model-name Salesforce/blip-image-captioning-large \
     --max-samples 100
 ```
