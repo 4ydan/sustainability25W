@@ -9,7 +9,7 @@ from transformers import AutoProcessor, Qwen2VLForConditionalGeneration
 MODEL_NAME = "Qwen/Qwen2-VL-2B-Instruct"
 IMAGES_DIR = "./data/coco2017/val2017/"
 OUTPUT_DIR = "./data/coco2017/captions_val2017"
-PROMPT = "Describe this image in one detailed caption"
+PROMPT = "Describe this image in caption"
 MAX_NEW_TOKENS = 128
 
 os.makedirs(OUTPUT_DIR, exist_ok=True)
@@ -62,7 +62,7 @@ for idx, fname in enumerate(subset, 1):
     ]
 
     text = processor.apply_chat_template(
-        messages, tokenize=True, add_generationprompt=True
+        messages, tokenize=False, add_generationprompt=True
     )
 
     image_inputs, video_inputs = process_vision_info(messages)
@@ -86,11 +86,12 @@ for idx, fname in enumerate(subset, 1):
         out[len(in_ids) :] for in_ids, out in zip(inputs.input_ids, output_ids)
     ]
     caption = processor.batch_decode(
-        generated_ids, skip_special_tokens=True, clean_up_tokenization_spaces=True
+        generated_ids, skip_special_tokens=True, clean_up_tokenization_spaces=False
     )[0].strip()
 
-    with open(out_path, "w", encoding="utf-8") as f:
-        f.write(caption)
+    # WARN: uncomment later to save captions as txt.files
+    # with open(out_path, "w", encoding="utf-8") as f:
+    #   f.write(caption)
 
     print(f"[{idx}/{len(subset)}] {fname}: {caption}")
 
