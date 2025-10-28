@@ -5,42 +5,41 @@ from PIL import Image
 from qwen_vl_utils import process_vision_info
 from transformers import AutoProcessor, Qwen2VLForConditionalGeneration
 
-# config
-MODEL_NAME = "Qwen/Qwen2-VL-2B-Instruct"
-IMAGES_DIR = "./data/coco2017/val2017/"
-OUTPUT_DIR = "./data/coco2017/captions_val2017"
-PROMPT = "Describe this image in caption"
-MAX_NEW_TOKENS = 128
+import config
 
-os.makedirs(OUTPUT_DIR, exist_ok=True)
+os.makedirs(config.OUTPUT_DIR, exist_ok=True)
 
-# check cuda availability
-if torch.cuda.is_available():
-    device = "cuda"
-    dtype = torch.bfloat16 if torch.cuda.is_bf16_supported else torch.float16
+# device setup
+if config.DEVICE == "auto":
+    if torch.cuda.is_available():
+        device = "cuda"
+        dtype = torch.bfloat16 if torch.cuda.is_bf16_supported() else torch.float16
+    else:
+        device = "cpu"
+        dtype = torch.float32
 else:
-    print("cuda not available, defaulting to CPU")
-    device = "cpu"
-    dtype = torch.float32
+    device = config.DEVICE
+    dtype = torch.float32 if device == "cpu" else torch.float16
+
+print(f"Using device: {device}, dtype: {dtype}")
 
 # load model
-processor = AutoProcessor.from_pretrained(MODEL_NAME)
+processor = AutoProcessor.from_pretrained(config.MODEL_NAME)
 model = Qwen2VLForConditionalGeneration.from_pretrained(
-    MODEL_NAME, torch_dtype=dtype, device_map="auto" if device == "cuda" else None
+    config.MODEL_NAME, torch_dtype=dtype, device_map="auto" if device == "cuda" else None
 )
 model.eval()
 
 # caption
 all_images_files = [
-    f for f in os.listdir(IMAGES_DIR) if f.lower().endswith((".jpg", ".jpeg", ".png"))
+    f for f in os.listdir(config.IMAGES_DIR) if f.lower().endswith((".jpg", ".jpeg", ".png"))
 ]
 
-subset = all_images_files[:10]
+subset = all_images_files[:config.NUM_IMAGES] if config.NUM_IMAGES else all_images_files
 
-# WARN: change subset to full images_files after testing is done
 for idx, fname in enumerate(subset, 1):
-    images_path = os.path.join(IMAGES_DIR, fname)
-    out_path = os.path.join(OUTPUT_DIR, fname + ".txt")
+    images_path = os.path.join(config.IMAGES_DIR, fname)
+    out_path = os.path.join(config.OUTPUT_DIR, os.path.splitext(fname)[0] + ".txt")
 
     if os.path.exists(out_path):
         print(f"{fname} already captioned")
@@ -50,13 +49,14 @@ for idx, fname in enumerate(subset, 1):
         image = Image.open(images_path).convert("RGB")
     except Exception as e:
         print(f"Couldn't open {images_path}: {e}")
+        continue
 
     messages = [
         {
             "role": "user",
             "content": [
                 {"type": "image", "image": images_path},
-                {"type": "text", "text": PROMPT},
+                {"type": "text", "text": config.PROMPT},
             ],
         }
     ]
@@ -78,9 +78,9 @@ for idx, fname in enumerate(subset, 1):
     with torch.no_grad():
         if device == "cuda":
             with torch.autocast(device_type="cuda", dtype=dtype):
-                output_ids = model.generate(**inputs, max_new_tokens=MAX_NEW_TOKENS)
+                output_ids = model.generate(**inputs, max_new_tokens=config.MAX_NEW_TOKENS)
         else:
-            output_ids = model.generate(**inputs, max_new_tokens=MAX_NEW_TOKENS)
+            output_ids = model.generate(**inputs, max_new_tokens=config.MAX_NEW_TOKENS)
 
     generated_ids = [
         out[len(in_ids) :] for in_ids, out in zip(inputs.input_ids, output_ids)
@@ -89,9 +89,9 @@ for idx, fname in enumerate(subset, 1):
         generated_ids, skip_special_tokens=True, clean_up_tokenization_spaces=False
     )[0].strip()
 
-    # WARN: uncomment later to save captions as txt.files
-    # with open(out_path, "w", encoding="utf-8") as f:
-    #   f.write(caption)
+    if config.SAVE_CAPTIONS:
+        with open(out_path, "w", encoding="utf-8") as f:
+            f.write(caption)
 
     print(f"[{idx}/{len(subset)}] {fname}: {caption}")
 
