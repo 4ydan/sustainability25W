@@ -26,7 +26,7 @@ print(f"Using device: {device}, dtype: {dtype}")
 # load model
 processor = AutoProcessor.from_pretrained(config.MODEL_NAME)
 model = Qwen2VLForConditionalGeneration.from_pretrained(
-    config.MODEL_NAME, torch_dtype=dtype, device_map="auto" if device == "cuda" else None
+    config.MODEL_NAME, dtype=dtype, device_map="auto" if device == "cuda" else None
 )
 model.eval()
 
