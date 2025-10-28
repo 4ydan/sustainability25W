@@ -18,7 +18,7 @@ NUM_IMAGES = 10
 # Device configuration
 # Options: "cuda", "cpu", "auto"
 # "auto" will use CUDA if available and supported
-DEVICE = "cpu"  # GTX 1060 not supported by current PyTorch build (requires sm_70+)
+DEVICE = "auto"  # GTX 1060 not supported by current PyTorch build (requires sm_70+)
 
 # Output configuration
 SAVE_CAPTIONS = False  # Enable to save captions to disk
