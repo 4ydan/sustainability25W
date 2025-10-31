@@ -2,6 +2,8 @@
 
 Image captioning pipeline using Qwen2-VL-2B-Instruct on COCO2017 validation set.
 
+TUWEL document: https://tuwel.tuwien.ac.at/pluginfile.php/4677714/mod_resource/content/1/Lecture%202.pdf
+
 ## Setup
 
 Install dependencies:
