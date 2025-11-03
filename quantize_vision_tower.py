@@ -37,6 +37,8 @@ class VisionTowerQuantizer:
         """Configure device for inference."""
         if device == "auto":
             return "cuda" if torch.cuda.is_available() else "cpu"
+        if device == "gpu":
+            return "cuda"
         return device
 
     def _get_dtype(self) -> torch.dtype:
@@ -62,11 +64,19 @@ class VisionTowerQuantizer:
 
         if quantize and self.device == "cuda":
             # Load model with 8-bit quantization config
+            from transformers import BitsAndBytesConfig
+
+            quantization_config = BitsAndBytesConfig(
+                load_in_8bit=True,
+                llm_int8_enable_fp32_cpu_offload=False,
+                llm_int8_has_fp16_weight=False,
+            )
+
             model = Qwen2VLForConditionalGeneration.from_pretrained(
                 self.model_name,
                 device_map="auto",
-                load_in_8bit=True,
-                llm_int8_skip_modules=None,  # Quantize all linear layers including vision tower
+                quantization_config=quantization_config,
+                torch_dtype=torch.float16,  # Consistent dtype
             )
         else:
             model = Qwen2VLForConditionalGeneration.from_pretrained(
