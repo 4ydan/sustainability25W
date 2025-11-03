@@ -1,10 +1,29 @@
 """Main entry point for running different model configurations."""
 
+import gc
+import signal
+import sys
+
 import click
+import torch
 
 from preprocess import download_coco
 from model_utils import load_model
 from inference import run_inference
+
+
+def cleanup_and_exit(signum, frame):
+    """Handle Ctrl+C gracefully by cleaning up GPU memory."""
+    print("\n\nInterrupted! Cleaning up GPU memory...")
+    if torch.cuda.is_available():
+        torch.cuda.empty_cache()
+    gc.collect()
+    print("Cleanup complete. Exiting.")
+    sys.exit(0)
+
+
+# Register signal handler for Ctrl+C
+signal.signal(signal.SIGINT, cleanup_and_exit)
 
 
 @click.command()
@@ -59,6 +78,12 @@ def main(quantization, num_images, device, save_captions):
         num_images=num_images,
         save_captions=save_captions,
     )
+
+    # Cleanup GPU memory
+    del processor, model
+    if torch.cuda.is_available():
+        torch.cuda.empty_cache()
+    gc.collect()
 
 
 if __name__ == "__main__":

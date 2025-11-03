@@ -47,8 +47,19 @@ uv run main.py
 
 ## Requirements
 
-- Python >=3.10
+- Python >=3.11
 - CUDA-capable GPU (quantization requires CUDA)
+
+## Project Structure
+
+```
+sustainability25W/
+├── main.py           # CLI entry point with click interface
+├── config.py         # Configuration constants
+├── model_utils.py    # Model loading (all quantization modes)
+├── inference.py      # Common inference logic
+└── preprocess.py     # COCO dataset download
+```
 
 ## Configuration
 
