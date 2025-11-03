@@ -2,6 +2,7 @@
 Vision Tower INT8 Quantization using bitsandbytes.
 
 Compares inference speed and model size between quantized and original models.
+Works with SmolVLM model.
 """
 
 import os
@@ -10,8 +11,7 @@ from typing import Tuple
 
 import torch
 from PIL import Image
-from qwen_vl_utils import process_vision_info
-from transformers import AutoProcessor, Qwen2VLForConditionalGeneration, BitsAndBytesConfig
+from transformers import AutoProcessor, AutoModelForVision2Seq, BitsAndBytesConfig
 
 import config
 
@@ -38,7 +38,7 @@ class VisionTowerQuantizer:
             return torch.float32
         return torch.bfloat16 if torch.cuda.is_bf16_supported() else torch.float16
 
-    def load_model(self, quantize: bool = False) -> Tuple[AutoProcessor, Qwen2VLForConditionalGeneration]:
+    def load_model(self, quantize: bool = False) -> Tuple[AutoProcessor, AutoModelForVision2Seq]:
         """Load model with optional INT8 quantization."""
         print(f"\nLoading {'quantized' if quantize else 'original'} model...")
 
@@ -46,15 +46,15 @@ class VisionTowerQuantizer:
 
         if quantize and self.device == "cuda":
             quantization_config = BitsAndBytesConfig(load_in_8bit=True)
-            model = Qwen2VLForConditionalGeneration.from_pretrained(
+            model = AutoModelForVision2Seq.from_pretrained(
                 self.model_name,
                 device_map="auto",
                 quantization_config=quantization_config,
             )
         else:
-            model = Qwen2VLForConditionalGeneration.from_pretrained(
+            model = AutoModelForVision2Seq.from_pretrained(
                 self.model_name,
-                dtype=self.dtype,
+                torch_dtype=self.dtype,
                 device_map="auto" if self.device == "cuda" else None,
             )
 
@@ -63,20 +63,18 @@ class VisionTowerQuantizer:
 
     def benchmark(self, processor, model, image_path: str, num_runs: int = 3) -> float:
         """Run inference and return average time in ms."""
-        Image.open(image_path).convert("RGB")  # Verify image loads
+        image = Image.open(image_path).convert("RGB")
 
         messages = [{
             "role": "user",
             "content": [
-                {"type": "image", "image": image_path},
+                {"type": "image"},
                 {"type": "text", "text": config.PROMPT},
             ],
         }]
 
-        text = processor.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
-        image_inputs, video_inputs = process_vision_info(messages)
-        inputs = processor(text=[text], images=image_inputs, videos=video_inputs,
-                          padding=True, return_tensors="pt").to(self.device)
+        prompt = processor.apply_chat_template(messages, add_generation_prompt=True)
+        inputs = processor(text=prompt, images=[image], return_tensors="pt").to(self.device)
 
         times = []
         for _ in range(num_runs):
@@ -111,7 +109,7 @@ def main():
     test_image = all_images[0]  # Use one image for benchmark
     print(f"Benchmarking with: {os.path.basename(test_image)}")
 
-    quantizer = VisionTowerQuantizer(config.MODEL_NAME, device=config.DEVICE)
+    quantizer = VisionTowerQuantizer(config.SMOLVLM_MODEL, device=config.DEVICE)
 
     print("\n" + "=" * 80)
     print("QUANTIZATION BENCHMARK")
