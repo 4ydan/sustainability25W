@@ -13,18 +13,5 @@ SMOLVLM_MODEL = "HuggingFaceTB/SmolVLM-Instruct"
 PROMPT = "Describe this image in a caption"
 MAX_NEW_TOKENS = 128
 
-# Processing configuration
-# Set to None to process all images, or an integer for testing subset
-NUM_IMAGES = 1
-
-# Device configuration
-# Options: "cuda", "cpu", "auto"
-# "auto" will use CUDA if available and supported
-DEVICE = "gpu"  # GTX 1060 not supported by current PyTorch build (requires sm_70+)
-
-# Output configuration
-SAVE_CAPTIONS = False  # Enable to save captions to disk
+# Download configuration
 CHUNK_SIZE = 8192  # Download chunk size in bytes
-
-# Quantization configuration
-SKIP_VISION_TOWER_QUANTIZATION = False  # Skip vision tower layers during quantization
