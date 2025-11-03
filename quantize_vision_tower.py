@@ -66,18 +66,12 @@ class VisionTowerQuantizer:
             # Load model with 8-bit quantization config
             from transformers import BitsAndBytesConfig
 
-            quantization_config = BitsAndBytesConfig(
-                load_in_8bit=True,
-                llm_int8_enable_fp32_cpu_offload=False,
-                llm_int8_has_fp16_weight=False,
-                llm_int8_threshold=0.0,  # Force INT8 for speed (may reduce accuracy)
-            )
+            quantization_config = BitsAndBytesConfig(load_in_8bit=True)
 
             model = Qwen2VLForConditionalGeneration.from_pretrained(
                 self.model_name,
                 device_map="auto",
                 quantization_config=quantization_config,
-                torch_dtype=torch.float16,  # Consistent dtype
             )
         else:
             model = Qwen2VLForConditionalGeneration.from_pretrained(
