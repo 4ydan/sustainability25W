@@ -11,7 +11,7 @@ from typing import Tuple
 
 import torch
 from PIL import Image
-from transformers import AutoProcessor, AutoModelForVision2Seq, BitsAndBytesConfig
+from transformers import AutoProcessor, AutoModelForImageTextToText, BitsAndBytesConfig
 
 import config
 
@@ -38,23 +38,23 @@ class VisionTowerQuantizer:
             return torch.float32
         return torch.bfloat16 if torch.cuda.is_bf16_supported() else torch.float16
 
-    def load_model(self, quantize: bool = False) -> Tuple[AutoProcessor, AutoModelForVision2Seq]:
+    def load_model(self, quantize: bool = False) -> Tuple[AutoProcessor, AutoModelForImageTextToText]:
         """Load model with optional INT8 quantization."""
         print(f"\nLoading {'quantized' if quantize else 'original'} model...")
 
         processor = AutoProcessor.from_pretrained(self.model_name)
 
-        if quantize and self.device == "cuda":
+        if quantize and self.device == "cuda" and not config.SKIP_VISION_TOWER_QUANTIZATION:
             quantization_config = BitsAndBytesConfig(load_in_8bit=True)
-            model = AutoModelForVision2Seq.from_pretrained(
+            model = AutoModelForImageTextToText.from_pretrained(
                 self.model_name,
                 device_map="auto",
                 quantization_config=quantization_config,
             )
         else:
-            model = AutoModelForVision2Seq.from_pretrained(
+            model = AutoModelForImageTextToText.from_pretrained(
                 self.model_name,
-                torch_dtype=self.dtype,
+                dtype=self.dtype,
                 device_map="auto" if self.device == "cuda" else None,
             )
 

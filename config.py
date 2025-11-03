@@ -25,3 +25,6 @@ DEVICE = "gpu"  # GTX 1060 not supported by current PyTorch build (requires sm_7
 # Output configuration
 SAVE_CAPTIONS = False  # Enable to save captions to disk
 CHUNK_SIZE = 8192  # Download chunk size in bytes
+
+# Quantization configuration
+SKIP_VISION_TOWER_QUANTIZATION = False  # Skip vision tower layers during quantization
