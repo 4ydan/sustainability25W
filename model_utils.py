@@ -1,5 +1,6 @@
 """Common utilities for model loading and device configuration."""
 
+import time
 from typing import Tuple
 
 import torch
@@ -61,9 +62,14 @@ def load_model(
     dtype = get_dtype(device)
     logger.info(f"Using device: {device}, dtype: {dtype}")
 
+    # Load processor
+    start_time = time.time()
     logger.debug(f"Loading processor from: {config.SMOLVLM_MODEL}")
     processor = AutoProcessor.from_pretrained(config.SMOLVLM_MODEL)
-    logger.debug("Processor loaded")
+    logger.debug(f"Processor loaded in {time.time() - start_time:.2f}s")
+
+    # Load model
+    model_start_time = time.time()
 
     if quantization_mode == "none":
         # Load unquantized model
@@ -96,6 +102,10 @@ def load_model(
     else:
         raise ValueError(f"Invalid quantization mode: {quantization_mode}")
 
+    model_load_time = time.time() - model_start_time
+    logger.info(f"Model weights loaded in {model_load_time:.2f}s")
+
     model.eval()
-    logger.info("Model loaded successfully")
+    total_time = time.time() - start_time
+    logger.info(f"Model ready (total: {total_time:.2f}s)")
     return processor, model, device, dtype

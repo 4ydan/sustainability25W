@@ -15,7 +15,7 @@ uv sync
 
 Run with all options (full quantization, 100 images, CUDA device, save captions):
 ```bash
-uv run main.py --quantization full --num-images 100 --device cuda --save-captions
+DEBUG=1 uv run main.py --quantization full --num-images 100 --device cuda --save-captions
 ```
 
 ### CLI Options
