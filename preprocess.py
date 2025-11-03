@@ -5,6 +5,9 @@ import zipfile
 import requests
 
 import config
+from logger import setup_logger
+
+logger = setup_logger(__name__)
 
 
 def download_coco():
@@ -12,7 +15,7 @@ def download_coco():
     ZIP = os.path.join(config.DATA_BASE_DIR, "images.zip")
 
     if not os.path.exists(ZIP):
-        print(f"Downloading COCO2017 validation set from: \n {config.COCO_URL}")
+        logger.info(f"Downloading COCO2017 validation set from: {config.COCO_URL}")
         total = 0
         req = requests.get(config.COCO_URL, stream=True)
 
@@ -25,15 +28,15 @@ def download_coco():
                     f.write(chunk)
                     total += len(chunk)
                     if i % 50 == 0:
-                        print(next(spinner), end="\r", flush=True)
-        print("Download done")
+                        logger.debug(next(spinner))
+        logger.info("Download complete")
     else:
-        print("Dataset already downloaded.")
+        logger.debug("Dataset already downloaded.")
 
     if not os.path.exists(config.IMAGES_DIR):
-        print("Extracting dataset ...")
+        logger.info("Extracting dataset...")
         with zipfile.ZipFile(ZIP, "r") as zip_f:
             zip_f.extractall(config.DATA_BASE_DIR)
-        print("Extraction done")
+        logger.info("Extraction complete")
     else:
-        print("Dataset already extracted.")
+        logger.debug("Dataset already extracted.")

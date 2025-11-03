@@ -10,15 +10,18 @@ import torch
 from preprocess import download_coco
 from model_utils import load_model
 from inference import run_inference
+from logger import setup_logger
+
+logger = setup_logger(__name__)
 
 
 def cleanup_and_exit(signum, frame):
     """Handle Ctrl+C gracefully by cleaning up GPU memory."""
-    print("\n\nInterrupted! Cleaning up GPU memory...")
+    logger.info("\n\nInterrupted! Cleaning up GPU memory...")
     if torch.cuda.is_available():
         torch.cuda.empty_cache()
     gc.collect()
-    print("Cleanup complete. Exiting.")
+    logger.info("Cleanup complete. Exiting.")
     sys.exit(0)
 
 
@@ -58,10 +61,7 @@ def main(quantization, num_images, device, save_captions):
     # Convert num_images: 0 means all images (None)
     num_images = None if num_images == 0 else num_images
 
-    print("\n" + "=" * 80)
-    print(f"RUNNING MODEL - QUANTIZATION MODE: {quantization.upper()}")
-    print(f"Device: {device}, Images: {num_images or 'all'}, Save: {save_captions}")
-    print("=" * 80 + "\n")
+    logger.info(f"Starting inference - Quantization: {quantization}, Device: {device}, Images: {num_images or 'all'}")
 
     # Load model with specified configuration
     processor, model, device_name, dtype = load_model(

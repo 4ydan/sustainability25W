@@ -6,6 +6,9 @@ import torch
 from transformers import AutoProcessor, AutoModelForImageTextToText, BitsAndBytesConfig
 
 import config
+from logger import setup_logger
+
+logger = setup_logger(__name__)
 
 
 def setup_device(device_config: str) -> str:
@@ -56,16 +59,15 @@ def load_model(
     """
     device = setup_device(device_config)
     dtype = get_dtype(device)
+    logger.info(f"Using device: {device}, dtype: {dtype}")
 
-    print(f"Using device: {device}, dtype: {dtype}")
-    print(f"Loading model: {config.SMOLVLM_MODEL}")
-    if quantization_mode != "none":
-        print(f"Quantization mode: {quantization_mode}")
-
+    logger.debug(f"Loading processor from: {config.SMOLVLM_MODEL}")
     processor = AutoProcessor.from_pretrained(config.SMOLVLM_MODEL)
+    logger.debug("Processor loaded")
 
     if quantization_mode == "none":
         # Load unquantized model
+        logger.info("Loading model...")
         model = AutoModelForImageTextToText.from_pretrained(
             config.SMOLVLM_MODEL,
             dtype=dtype,
@@ -76,6 +78,7 @@ def load_model(
         if device != "cuda":
             raise RuntimeError("Quantization requires CUDA device")
 
+        logger.debug(f"Creating {quantization_mode} quantization config")
         if quantization_mode == "skip_vision_tower":
             quantization_config = BitsAndBytesConfig(
                 load_in_8bit=True,
@@ -84,6 +87,7 @@ def load_model(
         else:  # full
             quantization_config = BitsAndBytesConfig(load_in_8bit=True)
 
+        logger.info(f"Loading model with {quantization_mode} quantization...")
         model = AutoModelForImageTextToText.from_pretrained(
             config.SMOLVLM_MODEL,
             device_map="auto",
@@ -93,4 +97,5 @@ def load_model(
         raise ValueError(f"Invalid quantization mode: {quantization_mode}")
 
     model.eval()
+    logger.info("Model loaded successfully")
     return processor, model, device, dtype
