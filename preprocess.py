@@ -1,4 +1,3 @@
-import itertools
 import os
 import zipfile
 
@@ -16,19 +15,12 @@ def download_coco():
 
     if not os.path.exists(ZIP):
         logger.info(f"Downloading COCO2017 validation set from: {config.COCO_URL}")
-        total = 0
         req = requests.get(config.COCO_URL, stream=True)
 
         with open(ZIP, "wb") as f:
-            spinner = itertools.cycle(
-                ["Downloading |", "Downloading /", "Downloading —", "Downloading \\"]
-            )
-            for i, chunk in enumerate(req.iter_content(chunk_size=config.CHUNK_SIZE)):
+            for chunk in req.iter_content(chunk_size=config.CHUNK_SIZE):
                 if chunk:
                     f.write(chunk)
-                    total += len(chunk)
-                    if i % 50 == 0:
-                        logger.debug(next(spinner))
         logger.info("Download complete")
     else:
         logger.debug("Dataset already downloaded.")
