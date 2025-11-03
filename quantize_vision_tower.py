@@ -70,6 +70,7 @@ class VisionTowerQuantizer:
                 load_in_8bit=True,
                 llm_int8_enable_fp32_cpu_offload=False,
                 llm_int8_has_fp16_weight=False,
+                llm_int8_threshold=0.0,  # Force INT8 for speed (may reduce accuracy)
             )
 
             model = Qwen2VLForConditionalGeneration.from_pretrained(
