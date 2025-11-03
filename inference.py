@@ -15,6 +15,7 @@ def run_inference(
     dtype: torch.dtype,
     num_images: int = None,
     save_captions: bool = False,
+    quantization_mode: str = "none",
 ):
     """
     Run inference on images using any loaded model.
@@ -26,8 +27,11 @@ def run_inference(
         dtype: Model dtype
         num_images: Number of images to process (None for all)
         save_captions: Whether to save captions to disk
+        quantization_mode: Quantization mode (none, skip_vision_tower, full)
     """
-    os.makedirs(config.OUTPUT_DIR, exist_ok=True)
+    # Create output directory based on quantization mode
+    output_dir = f"{config.OUTPUT_DIR}_{quantization_mode}"
+    os.makedirs(output_dir, exist_ok=True)
 
     all_images_files = [
         f for f in os.listdir(config.IMAGES_DIR)
@@ -38,7 +42,7 @@ def run_inference(
 
     for idx, fname in enumerate(subset, 1):
         images_path = os.path.join(config.IMAGES_DIR, fname)
-        out_path = os.path.join(config.OUTPUT_DIR, os.path.splitext(fname)[0] + ".txt")
+        out_path = os.path.join(output_dir, os.path.splitext(fname)[0] + ".txt")
 
         if os.path.exists(out_path):
             print(f"{fname} already captioned")

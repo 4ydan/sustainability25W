@@ -77,6 +77,7 @@ def main(quantization, num_images, device, save_captions):
         dtype=dtype,
         num_images=num_images,
         save_captions=save_captions,
+        quantization_mode=quantization,
     )
 
     # Cleanup GPU memory
