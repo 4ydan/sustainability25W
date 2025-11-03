@@ -1,6 +1,7 @@
 """Common inference logic for all model configurations."""
 
 import os
+import time
 
 import torch
 from PIL import Image
@@ -45,6 +46,8 @@ def run_inference(
     subset = all_images_files[:num_images] if num_images else all_images_files
     logger.info(f"Processing {len(subset)} images...")
 
+    overall_start = time.time()
+
     for idx, fname in enumerate(subset, 1):
         images_path = os.path.join(config.IMAGES_DIR, fname)
         out_path = os.path.join(output_dir, os.path.splitext(fname)[0] + ".txt")
@@ -67,6 +70,7 @@ def run_inference(
             ],
         }]
 
+        img_start = time.time()
         prompt = processor.apply_chat_template(messages, add_generation_prompt=True)
         inputs = processor(text=prompt, images=[image], return_tensors="pt").to(device)
 
@@ -77,9 +81,12 @@ def run_inference(
             else:
                 output_ids = model.generate(**inputs, max_new_tokens=config.MAX_NEW_TOKENS)
 
+        img_time = time.time() - img_start
+
         generated_ids = [
             out[len(in_ids):] for in_ids, out in zip(inputs.input_ids, output_ids)
         ]
+        num_tokens = len(generated_ids[0])
         caption = processor.batch_decode(
             generated_ids, skip_special_tokens=True, clean_up_tokenization_spaces=False
         )[0].strip()
@@ -88,6 +95,7 @@ def run_inference(
             with open(out_path, "w", encoding="utf-8") as f:
                 f.write(caption)
 
-        logger.info(f"[{idx}/{len(subset)}] {fname}: {caption}")
+        logger.info(f"[{idx}/{len(subset)}] {fname} - {img_time:.2f}s, {num_tokens} tokens: {caption}")
 
-    logger.info(f"Completed {len(subset)} images")
+    total_time = time.time() - overall_start
+    logger.info(f"Completed {len(subset)} images in {total_time:.2f}s")
