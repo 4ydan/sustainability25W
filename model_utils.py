@@ -29,18 +29,26 @@ def setup_device(device_config: str) -> str:
     return device_config
 
 
-def get_dtype(device: str) -> torch.dtype:
+def get_dtype(device: str, quantization_mode: str = "none") -> torch.dtype:
     """
-    Get appropriate dtype based on device.
+    Get appropriate dtype based on device and quantization mode.
 
     Args:
         device: Device string ("cuda" or "cpu")
+        quantization_mode: Quantization mode ("none", "skip_vision_tower", "full")
 
     Returns:
         torch.dtype for model inference
     """
     if device == "cpu":
         return torch.float32
+
+    # Use float16 for quantized models (matches BitsAndBytes output)
+    # https://github.com/bitsandbytes-foundation/bitsandbytes/issues/1030#issuecomment-2691474347
+    if quantization_mode in ["skip_vision_tower", "full"]:
+        return torch.float16
+
+    # Use bfloat16 for unquantized models (better stability)
     return torch.bfloat16 if torch.cuda.is_bf16_supported() else torch.float16
 
 
@@ -59,7 +67,7 @@ def load_model(
         Tuple of (processor, model, device, dtype)
     """
     device = setup_device(device_config)
-    dtype = get_dtype(device)
+    dtype = get_dtype(device, quantization_mode)
     logger.info(f"Using device: {device}, dtype: {dtype}")
 
     # Load processor
