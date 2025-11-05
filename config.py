@@ -3,7 +3,9 @@ import os
 # Data configuration
 DATA_BASE_DIR = "data/coco2017"
 COCO_URL = "http://images.cocodataset.org/zips/val2017.zip"
+COCO_ANNOTATIONS = "http://images.cocodataset.org/annotations/annotations_trainval2017.zip"
 IMAGES_DIR = os.path.join(DATA_BASE_DIR, "val2017")
+ANNOTATIONS_DIR = os.path.join(DATA_BASE_DIR, "annotations")
 OUTPUT_DIR = os.path.join(DATA_BASE_DIR, "captions_val2017")
 
 # Model configuration

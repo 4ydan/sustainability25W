@@ -9,7 +9,22 @@ from PIL import Image
 import config
 from logger import setup_logger
 
+import json
+
 logger = setup_logger(__name__)
+
+def get_model_size(model: torch.nn.Module, dtype: torch.dtype) -> float:
+    dtype_sizes = {
+        torch.float32: 4,
+        torch.float16: 2,
+        torch.bfloat16: 2,
+        torch.int8: 1,
+        torch.uint8: 1,
+    }
+    bytes_per_param = dtype_sizes.get(dtype, 4)
+    total_params = sum(p.numel() for p in model.parameters())
+    total_bytes = total_params * bytes_per_param
+    return total_bytes / (1024 ** 2)
 
 
 def run_inference(
@@ -46,13 +61,37 @@ def run_inference(
     subset = all_images_files[:num_images] if num_images else all_images_files
     logger.info(f"Processing {len(subset)} images...")
 
+
+    predictions = []
+    per_image_latencies = []
+    peak_vram = None
+    num_processed = 0
+
+    json_path = os.path.join(output_dir, "predicted_captions.json")
+    
+    existing_predictions = {}
+
+    if(os.path.exists(json_path)):
+        with open(json_path, "r", encoding="utf-8") as jf:
+            existing_list = json.load(jf)
+            existing_predictions = {str(p["image_id"]): p["caption"] for p in existing_list}
+          
+     
+
+        
+
+    if device == "cuda" and torch.cuda.is_available():
+        torch.cuda.reset_peak_memory_stats()
+    
+
     overall_start = time.time()
+    
 
     for idx, fname in enumerate(subset, 1):
         images_path = os.path.join(config.IMAGES_DIR, fname)
-        out_path = os.path.join(output_dir, os.path.splitext(fname)[0] + ".txt")
+        image_id = os.path.splitext(fname)[0]
 
-        if os.path.exists(out_path):
+        if image_id in existing_predictions:
             logger.debug(f"{fname} already captioned")
             continue
 
@@ -82,6 +121,8 @@ def run_inference(
                 output_ids = model.generate(**inputs, max_new_tokens=config.MAX_NEW_TOKENS)
 
         img_time = time.time() - img_start
+        per_image_latencies.append(img_time)
+        num_processed += 1
 
         generated_ids = [
             out[len(in_ids):] for in_ids, out in zip(inputs.input_ids, output_ids)
@@ -91,11 +132,57 @@ def run_inference(
             generated_ids, skip_special_tokens=True, clean_up_tokenization_spaces=False
         )[0].strip()
 
-        if save_captions:
-            with open(out_path, "w", encoding="utf-8") as f:
-                f.write(caption)
+        if save_captions:     
+            image_id = os.path.splitext(fname)[0] 
+            predictions.append({
+                "image_id": image_id,
+                "caption": caption,
+            })
+
 
         logger.info(f"[{idx}/{len(subset)}] {fname} - {img_time:.2f}s, {num_tokens} tokens: {caption}")
 
     total_time = time.time() - overall_start
+
+    latency_per_image = 0
+    throughput = 0
+    
+
+
+    if num_processed > 0:
+        latency_per_image = sum(per_image_latencies) / num_processed
+        throughput = num_processed / total_time 
+
+    if device == "cuda" and torch.cuda.is_available():
+        peak_vram = torch.cuda.max_memory_allocated() / (1024 ** 2) 
+
+    model_size = get_model_size(model, dtype)
+
+    metrics = {
+        "peak_VRAM": peak_vram,
+        "latency_per_image": latency_per_image,
+        "througput": throughput,
+        "model_size": model_size,
+    }
+
+    
+
+    if save_captions and len(predictions) > 0:
+        merged_predictions = {**existing_predictions, **{str(p["image_id"]): p["caption"] for p in predictions}}
+        merged_list = [{"image_id": k, "caption": v} for k, v in merged_predictions.items()]
+
+        with open(json_path, "w", encoding="utf-8") as jf:
+            json.dump(merged_list, jf, ensure_ascii=False, indent=2)
+        logger.info(f"Saved captions to {json_path}")
+
+        json_path = os.path.join(output_dir, "metrics.json")
+        with open(json_path, "w", encoding="utf-8") as jf:
+            json.dump(metrics, jf, ensure_ascii=False, indent=2)
+        logger.info(f"Saved metrics to {json_path}")
+
+    
+
     logger.info(f"Completed {len(subset)} images in {total_time:.2f}s")
+
+    
+
