@@ -15,7 +15,7 @@ from collections import defaultdict
 def plot_eval_summary(results):
     """
     This function produces a bar plot, which shows the average values of each performance metric for each
-    quantization method. It shows either 2 or 3 diagrams depending on wether SPICE is available.
+    quantization method. It shows either 2 or 3 diagrams depending on whether SPICE is available.
 
     Args:
         results: results dictionairy in this format:  
