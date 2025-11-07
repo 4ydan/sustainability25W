@@ -8,7 +8,7 @@ from pycocoevalcap.spice.spice import Spice
 
 def import_data(quantization_mode):
     """
-    Load the captions based on the speciied quantization mode
+    Load the captions based on the specified quantization mode
 
     Args:
         quantization_mode: can be "none", "skip_vision_tower" or "full"
