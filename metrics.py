@@ -7,7 +7,7 @@ import torch
 
 def get_model_size(model) -> float:
    """
-    Used to calculate the size of amode based on the amount of parameters it contains
+    Used to calculate the size of a mode based on the amount of parameters it contains
 
     Args:
         model: The model of which the size of should be calculated
