@@ -93,7 +93,7 @@ def calculate_spice_score(actual_captions, predicted_captions):
 
 def load_metrics():
     """
-    Loads all the metrics.json for each quantization mode and saves them to a dictionairy
+    Loads all the metrics.json for each quantization mode and saves them to a dictionary
 
     Returns:
         A dictionairy that conatis all efficiency metrics
