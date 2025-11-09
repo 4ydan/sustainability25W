@@ -7,7 +7,7 @@ import sys
 import click
 import torch
 
-from preprocess import download_coco
+from preprocess import download_coco, download_coco_captions
 from model_utils import load_model
 from inference import run_inference
 from logger import setup_logger
@@ -57,6 +57,7 @@ def main(quantization, num_images, device, save_captions):
     """Run model based on quantization mode configuration."""
     # Ensure dataset is downloaded
     download_coco()
+    download_coco_captions()
 
     # Convert num_images: 0 means all images (None)
     num_images = None if num_images == 0 else num_images
