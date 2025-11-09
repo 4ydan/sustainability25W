@@ -29,7 +29,7 @@ def compute_performance_metrics(
 ) -> Dict[str, Any]:
     """
     This function computes various performance metrics such as VRAM usage, latency per image, throughput and model size 
-    and saves them into a dictionairy
+    and saves them into a dictionary
 
     Args:
         per_image_latencies: for all images that were processed the times it took the model
