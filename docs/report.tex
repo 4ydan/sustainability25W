@@ -1,0 +1,166 @@
+\documentclass[conference]{IEEEtran}
+\ifCLASSINFOpdf
+  % \usepackage[pdftex]{graphicx}
+  % declare the path(s) where your graphic files are
+  % \graphicspath{{../pdf/}{../jpeg/}}
+  % and their extensions so you won't have to specify these with
+  % every instance of \includegraphics
+  % \DeclareGraphicsExtensions{.pdf,.jpeg,.png}
+\else
+  % or other class option (dvipsone, dvipdf, if not using dvips). graphicx
+  % will default to the driver specified in the system graphics.cfg if no
+  % driver is specified.
+  % \usepackage[dvips]{graphicx}
+  % declare the path(s) where your graphic files are
+  % \graphicspath{{../eps/}}
+  % and their extensions so you won't have to specify these with
+  % every instance of \includegraphics
+  % \DeclareGraphicsExtensions{.eps}
+\fi
+\hyphenation{op-tical net-works semi-conduc-tor}
+
+
+\begin{document}
+%
+% paper title
+% Titles are generally capitalized except for words such as a, an, and, as,
+% at, but, by, for, in, nor, of, on, or, the, to and up, which are usually
+% not capitalized unless they are the first or last word of the title.
+% Linebreaks \\ can be used within to get better formatting as desired.
+% Do not put math or special symbols in the title.
+\title{Bare Demo of IEEEtran.cls\\ for IEEE Conferences}
+
+
+% author names and affiliations
+% use a multiple column layout for up to three different
+% affiliations
+\author{\IEEEauthorblockN{Victor-Luca Bolboaca}
+\IEEEauthorblockA{School of Electrical and\\Computer Engineering\\
+Georgia Institute of Technology\\
+Atlanta, Georgia 30332--0250\\
+Email: http://www.michaelshell.org/contact.html}
+\and
+\IEEEauthorblockN{Homer Simpson}
+\IEEEauthorblockA{Twentieth Century Fox\\
+Springfield, USA\\
+Email: homer@thesimpsons.com}
+\and
+\IEEEauthorblockN{James Kirk\\ and Montgomery Scott}
+\IEEEauthorblockA{Starfleet Academy\\
+San Francisco, California 96678--2391\\
+Telephone: (800) 555--1212\\
+Fax: (888) 555--1212}}
+
+\maketitle
+
+\begin{abstract}
+The abstract goes here.
+\end{abstract}
+
+\IEEEpeerreviewmaketitle
+
+
+
+\section{Introduction}
+% TODO: Problem statement - why efficiency matters for VLMs
+% TODO: Challenges of deploying VLMs on resource-constrained devices
+% TODO: Quantization as a solution to reduce memory and computational costs
+% TODO: Research questions and contributions of this work
+
+\section{Methods}
+
+\subsection{Model}
+SmolVLM-Instruct is a compact open-source vision-language model developed by Hugging Face as part of the Smol model family, which focuses on achieving strong multimodal performance under strict compute and memory constraints. The model follows the general architecture pattern of recent VLMs—combining a visual encoder with a text-based decoder—but applies several design optimizations to reduce token count and improve efficiency while preserving capability.
+
+The visual backbone of SmolVLM is a SigLIP-based image encoder that processes images at 384×384 resolution. To reduce the computational cost of feeding visual features into the language model, the encoder uses a space-to-depth (pixel-shuffle-like) transformation that compresses spatial dimensions and produces a reduced set of visual tokens. These tokens are projected into the language model embedding space and concatenated with textual tokens to form a unified multimodal sequence.
+
+The language component is based on SmolLM2 (approximately 1.7B parameters), a lightweight decoder-only transformer. Although significantly smaller than large VLMs, SmolVLM is capable of image captioning, visual question answering, and general instruction-following tasks when prompts contain interleaved text and images. The Instruct variant is obtained via instruction-tuning on multimodal datasets designed to teach the model to respond to natural-language instructions grounded in images. This improves its conversational coherence, adherence to prompts, and general utility for inference-only scenarios. SmolVLM-Instruct is intended for research and non-critical applications; its creators note that the model may hallucinate or struggle with fine-grained visual details due to its compact size.
+
+\subsection{Dataset}
+The COCO 2017 dataset (Common Objects in Context) is a widely used benchmark for computer vision tasks, including object detection, segmentation, keypoint detection, and image captioning. COCO consists of images depicting everyday scenes with a diverse distribution of objects appearing in natural contexts, making it a standard evaluation resource for multimodal and vision-language models.
+
+The 2017 release provides 118,287 labeled training images (train2017), 5,000 validation images (val2017), and 40,670 unlabeled test images (test2017) used for leaderboard evaluation. Each annotated image includes detailed object bounding boxes, instance masks, category labels across 80 "thing" classes, and five human-written captions describing the visual content. These captions form the basis for captioning benchmarks such as BLEU, METEOR, ROUGE, and CIDEr.
+
+For this work, COCO serves as the data source for inference: images are supplied to the model without any additional fine-tuning. Because the dataset contains diverse object categories, crowded scenes, and rich contextual information, it provides a suitable testbed to evaluate the zero-shot captioning and visual understanding capabilities of SmolVLM-Instruct.
+
+\subsection{Quantization}
+To evaluate the impact of model compression on inference efficiency, we apply 8-bit quantization using the bitsandbytes library~\cite{dettmers2022llmint8,bitsandbytes2023} through HuggingFace's BitsAndBytesConfig wrapper~\cite{huggingface2023transformers}.
+Three quantization modes are compared: \textit{none} (full precision baseline), \textit{skip\_vision\_tower} (language model quantized, vision encoder preserved at full precision), and \textit{full} (both components quantized to 8-bit).
+
+For quantized configurations, model weights are loaded in 8-bit integer format using \texttt{load\_in\_8bit=True}.
+In the \textit{skip\_vision\_tower} mode, the vision tower and visual projection modules are excluded from quantization via \texttt{llm\_int8\_skip\_modules=["vision\_tower", "visual"]}, preserving their original precision.
+The \textit{full} mode applies quantization uniformly across all model components without module exclusions.
+
+Quantized models operate with float16 activations to match bitsandbytes' output expectations, while the unquantized baseline uses bfloat16 when available for improved numerical stability.
+All quantization operations require CUDA; CPU inference uses float32 without quantization support.
+
+\subsection{Training Regime}
+This work focuses exclusively on zero-shot inference with no fine-tuning applied to the pre-trained SmolVLM-Instruct model.
+All three quantization configurations use the same frozen model weights from the HuggingFace checkpoint, with only the precision of weight representations varying across experiments.
+Post-training quantization is applied at load time without requiring additional calibration data or gradient updates.
+
+\section{Results}
+% TODO: Table showing quality metrics (CIDEr, BLEU-4, METEOR, ROUGE-L) for all three configurations
+% TODO: Table showing efficiency metrics (peak VRAM, latency per image, throughput, model size on disk)
+% TODO: Plot comparing quality vs efficiency trade-offs
+% TODO: 2-3 qualitative examples with images and generated captions from different quantization modes
+% TODO: Energy consumption measurements (bonus if available)
+
+\section{Discussion}
+% TODO: Analysis of where performance drops occur (which quantization mode affects quality most)
+% TODO: Ablation study: impact of quantizing vision tower vs language model
+% TODO: Limitations of the approach (e.g., precision loss, hardware requirements)
+% TODO: Ethical considerations: hallucinations, bias, sensitive content handling
+% TODO: Comparison with related work if applicable
+
+\section{Conclusion}
+% TODO: Summary of key findings
+% TODO: Insights about quantization trade-offs for VLMs
+% TODO: Recommendations for practitioners (when to use which quantization mode)
+% TODO: Future work directions
+
+\section*{Acknowledgment}
+% TODO: Acknowledge funding sources, collaborators, or resources used
+
+\bibliographystyle{IEEEtran}
+\bibliography{bib}
+
+\appendix
+\section{Experimental Setup}
+
+\subsection{Hardware}
+Experiments were conducted on the following configurations:
+
+\textbf{Setup 1:}
+\begin{itemize}
+    \item GPU: NVIDIA L40S (12GB VRAM, virtualized)
+    \item RAM: 8GB
+    \item OS: Debian GNU/Linux 12
+    \item CUDA: 12.2, Driver: 535.247.01
+\end{itemize}
+
+\textbf{Setup 2:}
+% TODO: GPU model and VRAM
+% TODO: RAM
+% TODO: OS
+% TODO: CUDA and driver versions
+
+\subsection{Software Environment}
+\begin{itemize}
+    \item Python: 3.11+
+    \item PyTorch: 2.4.0
+    \item Transformers: 4.57.1
+    \item bitsandbytes: 0.48.2
+    \item accelerate: 1.11.0
+\end{itemize}
+
+\subsection{Hyperparameters}
+\begin{itemize}
+    \item Max new tokens: 128
+    \item Decoding strategy: Greedy (deterministic)
+    \item Batch size: 1 (per-image inference)
+    \item Prompt: "Describe this image in a caption"
+    \item Precision: Mixed (see quantization modes)
+\end{itemize}
+
+\end{document}
