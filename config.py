@@ -12,7 +12,7 @@ OUTPUT_DIR = os.path.join(DATA_BASE_DIR, "captions_val2017")
 # Options: "Qwen/Qwen2-VL-2B-Instruct", "HuggingFaceTB/SmolVLM-Instruct"
 MODEL_NAME = "Qwen/Qwen2-VL-2B-Instruct"
 SMOLVLM_MODEL = "HuggingFaceTB/SmolVLM-Instruct"
-PROMPT = "Describe this image in a caption"
+PROMPT = "Describe this image in a short caption"
 MAX_NEW_TOKENS = 128
 
 # Download configuration
