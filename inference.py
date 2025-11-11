@@ -56,11 +56,6 @@ def run_inference(
     
     existing_predictions = {}
 
-    if(os.path.exists(json_path)):
-        with open(json_path, "r", encoding="utf-8") as jf:
-            existing_list = json.load(jf)
-            existing_predictions = {str(p["image_id"]): p["caption"] for p in existing_list}
-
     if device == "cuda" and torch.cuda.is_available():
         torch.cuda.reset_peak_memory_stats()
     
@@ -69,10 +64,6 @@ def run_inference(
     for idx, fname in enumerate(subset, 1):
         images_path = os.path.join(config.IMAGES_DIR, fname)
         image_id = os.path.splitext(fname)[0]
-
-        if image_id in existing_predictions:
-            logger.debug(f"{fname} already captioned")
-            continue
 
         try:
             image = Image.open(images_path).convert("RGB")
