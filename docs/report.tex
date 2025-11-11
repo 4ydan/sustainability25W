@@ -1,6 +1,6 @@
 \documentclass[conference]{IEEEtran}
 \ifCLASSINFOpdf
-  % \usepackage[pdftex]{graphicx}
+\usepackage{graphicx}
   % declare the path(s) where your graphic files are
   % \graphicspath{{../pdf/}{../jpeg/}}
   % and their extensions so you won't have to specify these with
@@ -18,7 +18,9 @@
   % \DeclareGraphicsExtensions{.eps}
 \fi
 \hyphenation{op-tical net-works semi-conduc-tor}
-
+\usepackage{subcaption}
+\usepackage{booktabs}
+\usepackage{float}
 
 \begin{document}
 %
@@ -28,33 +30,25 @@
 % not capitalized unless they are the first or last word of the title.
 % Linebreaks \\ can be used within to get better formatting as desired.
 % Do not put math or special symbols in the title.
-\title{Bare Demo of IEEEtran.cls\\ for IEEE Conferences}
+\title{Sustainability Exercise 1 - Report}
 
 
 % author names and affiliations
 % use a multiple column layout for up to three different
 % affiliations
 \author{\IEEEauthorblockN{Victor-Luca Bolboaca}
-\IEEEauthorblockA{School of Electrical and\\Computer Engineering\\
-Georgia Institute of Technology\\
-Atlanta, Georgia 30332--0250\\
-Email: http://www.michaelshell.org/contact.html}
+\IEEEauthorblockA{11820616}
 \and
-\IEEEauthorblockN{Homer Simpson}
-\IEEEauthorblockA{Twentieth Century Fox\\
-Springfield, USA\\
-Email: homer@thesimpsons.com}
+\IEEEauthorblockN{Aydan Namdar Ghazani}
+\IEEEauthorblockA{11709245}
 \and
-\IEEEauthorblockN{James Kirk\\ and Montgomery Scott}
-\IEEEauthorblockA{Starfleet Academy\\
-San Francisco, California 96678--2391\\
-Telephone: (800) 555--1212\\
-Fax: (888) 555--1212}}
+\IEEEauthorblockN{Leon Christöfl}
+\IEEEauthorblockA{11904663}}
 
 \maketitle
 
 \begin{abstract}
-The abstract goes here.
+Large Vision-Language Models (VLMs) are increasingly used for tasks such as image captioning, yet their high computational and energy demands pose challenges for sustainable AI deployment. In this work, we investigate accuracy–efficiency trade-offs in quantizing SmolVLM, a compact open-source VLM, for caption generation on the COCO 2017 validation set. We evaluate three configurations: an FP16 baseline, an 8-bit weight-only model using bitsandbytes LLM.int8(), and an aggressively quantized variant in which both the language components and the vision tower are quantized to INT8. We measure caption quality using CIDEr and BLEU-4, and assess efficiency through peak GPU memory consumption, latency per image, throughput, and model size on disk. Our findings show that weight-only INT8 quantization yields substantial memory and latency improvements with negligible quality losses, enabling energy and resource savings that directly support sustainable machine learning practices. Full INT8 quantization of the vision tower does not affect performance or accuary noticeably for the task at hand. Overall, this study highlights the sustainability benefits of lightweight VLMs and quantization-aware deployment strategies, particularly for users operating on consumer-grade hardware with constrained energy and compute budgets.
 \end{abstract}
 
 \IEEEpeerreviewmaketitle
@@ -66,22 +60,28 @@ The abstract goes here.
 % TODO: Challenges of deploying VLMs on resource-constrained devices
 % TODO: Quantization as a solution to reduce memory and computational costs
 % TODO: Research questions and contributions of this work
+Vision-Language Models (VLMs) such as LLaVA, Qwen-VL, and SmolVLM have recently achieved strong performance on multimodal tasks including image captioning, visual question answering, and document understanding. Despite their growing ubiquity in research and industry, these models often require substantial computational and energy resources. Even relatively small models - those in the 2B–8B parameter range - can demand several gigabytes of GPU memory and generate significant carbon emissions when run at scale. Reducing the energy and resource footprint of AI systems is increasingly recognized as a critical research priority. Techniques that improve efficiency without sacrificing model quality can contribute to more sustainable machine learning practice, enabling broader access, reducing environmental cost, and minimizing hardware requirements.
 
+Quantization is a promising approach toward this goal. By reducing numerical precision, such as storing weights in INT8 instead of FP16 or BF16, quantization lowers memory consumption and increases effective memory bandwidth - two factors that directly influence energy use. Faster inference and reduced VRAM pressure also allow models to run on smaller, more energy-efficient devices, reducing the environmental cost of deployment. However, quantization can degrade performance and its effects vary between architectures. In VLMs, the vision encoder (e.g. ViT or CLIP-based towers) is often more sensitive to precision reduction than language transformer layers, raising important questions about where quantization is most beneficial and where it introduces unacceptable quality loss.
+
+In this experiment, we explore these questions using SmolVLM, a lightweight and already quite computationally efficient VLM, applied to image captioning on a subset (500 images) of the COCO 2017 validation set. We compare three precision regimes under a controlled experimental setup: (1) a full-precision FP16 baseline, (2) an 8-bit weight-only configuration using bitsandbytes LLM.int8() for attention and MLP blocks while keeping the vision tower in FP16, and (3) a fully quantized variant in which the vision encoder is also quantized to INT8. For each configuration, we evaluate caption quality with CIDEr and BLEU-4 and measure efficiency in terms of memory usage, per-image latency, throughput, and model size on disk. We also discuss the trade-offs between computational efficiency and captioning accuracy.
+
+Our results provide practical insights into deploying VLMs in resource-constrained or sustainability-aware settings, highlighting which components of a VLM can be quantized with minimal impact and where more careful design is needed. Ultimately, this work aims to support energy-efficient, accessible, and environmentally conscious deployment of multimodal AI technologies.
 \section{Methods}
 
 \subsection{Model}
-SmolVLM-Instruct is a compact open-source vision-language model developed by Hugging Face as part of the Smol model family, which focuses on achieving strong multimodal performance under strict compute and memory constraints. The model follows the general architecture pattern of recent VLMs—combining a visual encoder with a text-based decoder—but applies several design optimizations to reduce token count and improve efficiency while preserving capability.
+SmolVLM-Instruct is a compact open-source vision-language model developed by Hugging Face as part of the Smol model family, which focuses on achieving strong multimodal performance under strict compute and memory constraints. The model follows the general architecture pattern of recent VLMs combining a visual encoder with a text-based decoder, but applies several design optimizations to reduce token count and improve efficiency while sacrificing little capability.~\cite{marafioti2025smolvlm}
 
-The visual backbone of SmolVLM is a SigLIP-based image encoder that processes images at 384×384 resolution. To reduce the computational cost of feeding visual features into the language model, the encoder uses a space-to-depth (pixel-shuffle-like) transformation that compresses spatial dimensions and produces a reduced set of visual tokens. These tokens are projected into the language model embedding space and concatenated with textual tokens to form a unified multimodal sequence.
+The visual backbone of SmolVLM is a SigLIP-based image encoder (428M SigLIP-SO400M in our case) that processes images uses patches of 384×384 resolution. To reduce the computational cost of feeding visual features into the language model, the encoder uses a space-to-depth (pixel-shuffle-like) transformation that compresses spatial dimensions and produces a reduced set of visual tokens. Essentially, tokens have a higher dimensionality (hidden size), but are reduced in count. These tokens are projected into the language model embedding space and concatenated with textual tokens to form a unified multimodal sequence.~\cite{marafioti2025smolvlm}
 
-The language component is based on SmolLM2 (approximately 1.7B parameters), a lightweight decoder-only transformer. Although significantly smaller than large VLMs, SmolVLM is capable of image captioning, visual question answering, and general instruction-following tasks when prompts contain interleaved text and images. The Instruct variant is obtained via instruction-tuning on multimodal datasets designed to teach the model to respond to natural-language instructions grounded in images. This improves its conversational coherence, adherence to prompts, and general utility for inference-only scenarios. SmolVLM-Instruct is intended for research and non-critical applications; its creators note that the model may hallucinate or struggle with fine-grained visual details due to its compact size.
+The language component is based on SmolLM2 (approximately 1.7B parameters), a lightweight decoder-only transformer. Although significantly smaller than large VLMs, SmolVLM is nonetheless very competitive at tasks like image captioning, visual question answering, and general instruction-following tasks when prompts contain interleaved text and images. The Instruct variant is obtained via instruction-tuning on multimodal datasets designed to teach the model to respond to natural-language instructions grounded in images. This improves its conversational coherence, adherence to prompts, and general utility for inference-only scenarios. SmolVLM-Instruct is intended for research and non-critical applications; its creators note that the model may hallucinate or struggle with fine-grained visual details due to its compact size.~\cite{marafioti2025smolvlm}
 
 \subsection{Dataset}
 The COCO 2017 dataset (Common Objects in Context) is a widely used benchmark for computer vision tasks, including object detection, segmentation, keypoint detection, and image captioning. COCO consists of images depicting everyday scenes with a diverse distribution of objects appearing in natural contexts, making it a standard evaluation resource for multimodal and vision-language models.
 
 The 2017 release provides 118,287 labeled training images (train2017), 5,000 validation images (val2017), and 40,670 unlabeled test images (test2017) used for leaderboard evaluation. Each annotated image includes detailed object bounding boxes, instance masks, category labels across 80 "thing" classes, and five human-written captions describing the visual content. These captions form the basis for captioning benchmarks such as BLEU, METEOR, ROUGE, and CIDEr.
 
-For this work, COCO serves as the data source for inference: images are supplied to the model without any additional fine-tuning. Because the dataset contains diverse object categories, crowded scenes, and rich contextual information, it provides a suitable testbed to evaluate the zero-shot captioning and visual understanding capabilities of SmolVLM-Instruct.
+For this work, COCO serves as the data source for inference: images are supplied to the model without any additional fine-tuning. Because the dataset contains diverse object categories, crowded scenes, and rich contextual information, it provides a suitable testbed to evaluate the visual understanding capabilities of SmolVLM-Instruct. After some initial testing we decided to shrink the amount of images to 500 due to hardware and temporal limitations. The exact images used can be found in the code repository. 
 
 \subsection{Quantization}
 To evaluate the impact of model compression on inference efficiency, we apply 8-bit quantization using the bitsandbytes library~\cite{dettmers2022llmint8,bitsandbytes2023} through HuggingFace's BitsAndBytesConfig wrapper~\cite{huggingface2023transformers}.
@@ -100,27 +100,141 @@ All three quantization configurations use the same frozen model weights from the
 Post-training quantization is applied at load time without requiring additional calibration data or gradient updates.
 
 \section{Results}
-% TODO: Table showing quality metrics (CIDEr, BLEU-4, METEOR, ROUGE-L) for all three configurations
-% TODO: Table showing efficiency metrics (peak VRAM, latency per image, throughput, model size on disk)
-% TODO: Plot comparing quality vs efficiency trade-offs
-% TODO: 2-3 qualitative examples with images and generated captions from different quantization modes
-% TODO: Energy consumption measurements (bonus if available)
+\subsection{Quantitative Results}
+
+To illustrate the quantitative results, the following diagrams and tables  were generated. Figure \ref{fig:scores} shows the average performance of all three configurations in the chosen metrics, which are the CIDEr Score \cite{DBLP:journals/corr/VedantamZP14a} and the BLEU-4 Score \cite{10.3115/1073083.1073135}. 
+
+As can be seen by the results, the scores in both metrics, for all configurations, are fairly similar, so there are no drawbacks when it comes to performance. In general all configurations can produce moderate to good results \cite{DBLP:journals/corr/VedantamZP14a} \cite{10.3115/1073083.1073135}. 
+
+\begin{table}[H]
+\centering
+\label{tab:quantization_results}
+\begin{tabular}{lcc}
+\hline
+\textbf{Quantization Mode} & \textbf{BLEU-4} & \textbf{CIDEr} \\
+\hline
+None               & 0.1749 & \textbf{0.5795} \\
+Skip Vision Tower  & 0.1877 & 0.5748 \\
+Full               & \textbf{0.1909} & 0.5756 \\
+\hline
+\end{tabular}
+\end{table}
+
+
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=1\linewidth]{diagrams/score_diagram.png}
+    \caption{CIDEr \& BLEU-4 Scores across all quantization modes}
+    \label{fig:scores}
+\end{figure}
+
+
+
+
+Figure \ref{fig:efficiency} lays the focus on the efficiency of the configurations. For this four attributes of efficiency were measured. Peak VRAM (MiB), latency per image prompt (s), throughput (img/s) and the model size on disk (MiB).
+
+The captured metrics show a big difference between the full version and the quantized ones. The quantized versions are significantly more efficient when it comes to all attributes. They perform quicker with a smaller model size and less VRAM usage. However, there is not a large difference when it comes to efficiency in both quantization modes.
+
+
+\begin{table}[H]
+\centering
+\begin{tabular}{lcccc}
+\hline
+\textbf{Mode} & \textbf{Latency} & \textbf{Model Size} & \textbf{Peak VRAM} & \textbf{Throughput} \\
+\hline
+None              & 6.2102 & 4284.43 & 6054.31 & 0.1609 \\
+Skip VT & \textbf{2.6856} & \textbf{2240.54} & \textbf{3109.43} & \textbf{0.3716} \\
+Full              & 2.7124 & 2336.55 & 3203.20 & 0.3680 \\
+\hline
+\end{tabular}
+\end{table}
+
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=1\linewidth]{diagrams/efficiency_metrics_diagrams.png}
+    \caption{Efficiency metrics across all quantization modes}
+    \label{fig:efficiency}
+\end{figure}
+
+The quantitative results of the experiments show that there is no significant efficiency/performance tradeoff in this case. The quantized model's performance is almost the same as the non-quantized version, while having substantial efficiency gains. 
+
+\subsection{Qualitative Results}
+
+The randomly selected images in Figure \ref{fig:qualitative_examples} show some of the image descriptions that the model came up with. The top caption is the ground truth so the caption, which was provided by the COCO dataset. The captions below are the ones produced by the different modes. In this small subset of examples, we can see that all the produced captions describe the image relatively well, although we can see some differences when it comes to the ground truth and the different generated captions. Sometimes details are not recognized, for example, the toppings on the pizza or the shapes on the bed. One aspect that is especially noticeable is that the unquantized version of the model tends to give rather long answers. We tried to reduce this by including in the prompt that the answers should be short, but sometimes this issue still occurs. 
+
+\begin{figure}[h] 
+    \centering
+
+    \begin{subfigure}{\linewidth}
+        \centering
+        \includegraphics[width=\linewidth]{diagrams/image1.png}
+    \end{subfigure}
+
+    \vspace{0.5em}
+
+    \begin{subfigure}{\linewidth}
+        \centering
+        \includegraphics[width=\linewidth]{diagrams/image2.png}
+    \end{subfigure}
+
+    \vspace{0.5em}
+
+    \begin{subfigure}{\linewidth}
+        \centering
+        \includegraphics[width=\linewidth]{diagrams/image3.png}
+    \end{subfigure}
+
+    \caption{Examples of generated captions}
+    \label{fig:qualitative_examples}
+\end{figure}
 
 \section{Discussion}
-% TODO: Analysis of where performance drops occur (which quantization mode affects quality most)
-% TODO: Ablation study: impact of quantizing vision tower vs language model
+
+\subsection{Performance \& Limitations}
+The overall performance of the model across all modes is sufficient, it can describe most of the content of the images in relatively simple terms. Sometimes it struggles with small visual details. This might be improved by using a larger visual language model. 
+
+Surprisingly, when looking at the final results, it is very noticeable that the performance is not affected by quantization. The quality is similar, in some cases even being an improvement over the original full model. There does not seem to be a large difference between the two quantization modes. Both have almost equal performance results and also have similar values when it comes to efficiency. If we look at qualitative data, in many cases, both modes produce exactly the same outputs. It is worth noting that in some cases the unquantized model can go off on a tangent and generate an entire paragraph (sometimes more) for an image description, even when prompted to generate a short caption. This is reflected in the scores achieved.
+
+This behavior can be explained by how quantization influences the confidence and sharpness of the model’s output distribution. In full-precision, the language decoder maintains higher numerical fidelity in its attention weights and MLP activations, allowing it to sustain richer token-level dependencies and remain confident enough to continue generating descriptive details. Quantization introduces small perturbations that tend to flatten the logits and increase uncertainty at each decoding step. As a result, the model becomes more likely to emit early termination tokens or default to shorter, safer sequences. Additionally, quantization noise can weaken the model’s ability to maintain long-range coherence during autoregressive decoding, making it less inclined to elaborate beyond the most prominent elements of the image. Consequently, quantized models often produce shorter, more conservative captions, while the unquantized model retains the capacity to generate longer, more detailed descriptions.
+To conclude, at this particular task of captioning images, the quantized models do not show any accuracy drop-offs whatsoever.
+
+
 % TODO: Limitations of the approach (e.g., precision loss, hardware requirements)
-% TODO: Ethical considerations: hallucinations, bias, sensitive content handling
-% TODO: Comparison with related work if applicable
+
+\subsection{Ethical considerations}
+
+The model sometimes generates hallucinations. For example, in one of the images of fig \ref{fig:qualitative_examples}, which depicts three beer bottles, all the generated captions state that there are four bottles in the image. In the case of this application, it is just a small irrelevant detail, but if we had a more critical use case, this could be a big problem.
+
+Like most AI models, the designed image captioning system is prone to bias that is inherited by the training data used. As described in other research \cite{zhao2021understandingevaluatingracialbiases}, the COCO dataset has some skews towards images that represent societal bias in a Western context, which might be further reinforced by the model. 
+
+Finally, image captioning systems should require guardrails to handle sensitive content. If not they could produce harmful or inappropriate content or they might even disclose personal information of actors.
+
 
 \section{Conclusion}
+
+Our experiments confirm that SmolVLM-Instruct tolerates 8-bit quantization remarkably well, maintaining caption quality while achieving substantial efficiency gains.
+Both quantized variants achieved BLEU-4 scores marginally higher than the FP16 baseline (0.1877 and 0.1909 vs 0.1749), though these differences fall within expected variance for stochastic generation.
+
+The efficiency gains, however, are hardware-dependent.
+On our primary configuration, weight-only INT8 quantization reduced memory footprint from 6054 MiB to 3109 MiB and cut per-image latency from 6.2 to 2.7 seconds. This 57\% latency reduction directly translates to proportional energy savings during inference.
+However, when testing on an L40S GPU, quantization actually introduced overhead, resulting in slower inference than the FP16 baseline.
+This suggests that quantization benefits are not universal and depend critically on hardware characteristics—likely the balance between compute throughput and memory bandwidth on different GPU architectures.
+
+Interestingly, full quantization of the vision tower provided minimal additional benefit over the skip-vision configuration (3203 vs 3109 MiB VRAM), suggesting that the language decoder dominates resource usage in SmolVLM's architecture.
+This finding contradicts common assumptions about vision encoder sensitivity to quantization and warrants further investigation across different VLM architectures.
+
+While the accuracy loss from quantizing the vision tower is negligible for image captioning, the drop-off can look very different for other vision-heavy tasks. Tasks such as OCR or fine-grained object localization depend on precise spatial details that are partially smoothed out by both pixel-shuffle compression and quantization. In these domains, small perturbations in the visual embeddings can lead to disproportionately large performance degradations, because the downstream language model cannot easily reconstruct missing fine-grained information from context alone. Similarly, tasks requiring dense spatial correspondence or small-object recognition rely on high-frequency features that quantization tends to distort. Therefore, although captioning remains stable under aggressive quantization due to its reliance on global semantics, tasks with tight visual precision requirements are expected to show a steeper accuracy decline. This discrepancy highlights that quantization effects are highly task-dependent and that generalizing results from captioning to other multimodal benchmarks must be done with caution.
+
+Future work could explore deployment on true edge devices.
+While our 3GB quantized model still exceeds typical embedded system constraints, further compression techniques like 4-bit quantization or knowledge distillation could potentially enable VLM inference on devices like Raspberry Pi or Jetson Nano.
+Such deployments would represent a genuine breakthrough for sustainable AI, enabling multimodal capabilities at watts rather than hundreds of watts of power consumption.
 % TODO: Summary of key findings
 % TODO: Insights about quantization trade-offs for VLMs
 % TODO: Recommendations for practitioners (when to use which quantization mode)
 % TODO: Future work directions
 
-\section*{Acknowledgment}
-% TODO: Acknowledge funding sources, collaborators, or resources used
 
 \bibliographystyle{IEEEtran}
 \bibliography{bib}
@@ -131,15 +245,21 @@ Post-training quantization is applied at load time without requiring additional 
 \subsection{Hardware}
 Experiments were conducted on the following configurations:
 
-\textbf{Setup 1:}
+\textbf{Setup 1 (presented in this report):}
+\begin{itemize}
+    \item GPU: NVIDIA T4 (12GB VRAM)
+    \item RAM: 16GB
+    \item OS: Ubuntu 24.04.3 LTS
+    \item CUDA: 12.8 Driver: 570.195.03
+\end{itemize}
+
+\textbf{Setup 2:}
 \begin{itemize}
     \item GPU: NVIDIA L40S (12GB VRAM, virtualized)
     \item RAM: 8GB
     \item OS: Debian GNU/Linux 12
     \item CUDA: 12.2, Driver: 535.247.01
 \end{itemize}
-
-\textbf{Setup 2:}
 % TODO: GPU model and VRAM
 % TODO: RAM
 % TODO: OS
@@ -159,7 +279,7 @@ Experiments were conducted on the following configurations:
     \item Max new tokens: 128
     \item Decoding strategy: Greedy (deterministic)
     \item Batch size: 1 (per-image inference)
-    \item Prompt: "Describe this image in a caption"
+    \item Prompt: "Describe this image in a short caption"
     \item Precision: Mixed (see quantization modes)
 \end{itemize}
 
