@@ -55,10 +55,16 @@ uv run main.py
 ```
 sustainability25W/
 ├── main.py           # CLI entry point with click interface
+├── statistics.ipynb  # Notebook to run all quanitzation modes and generate diagrams
 ├── config.py         # Configuration constants
 ├── model_utils.py    # Model loading (all quantization modes)
 ├── inference.py      # Common inference logic
-└── preprocess.py     # COCO dataset download
+├── preprocess.py     # COCO dataset download
+├── evaluation.py     # Logic for performance evaluation
+├── logger.py         # Logging Setup
+├── metrics.py        # Logic for efficiency metrics
+└── diagrams.py       # Report diagram generation
+
 ```
 
 ## Configuration
@@ -70,4 +76,4 @@ Edit `config.py` to adjust:
 
 ## Output
 
-Captions saved to `data/coco2017/captions_val2017/` as `.txt` files (when `--save-captions` is used).
+Captions and Metrics saved to `data/coco2017/captions_val2017_{quantization_mode}/` as `.json` files (when `--save-captions` is used).
