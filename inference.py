@@ -20,6 +20,7 @@ def run_inference(
     device: str,
     dtype: torch.dtype,
     num_images: int = None,
+    image_id: str = None,
     save_captions: bool = False,
     quantization_mode: str = "none",
 ):
@@ -32,6 +33,7 @@ def run_inference(
         device: Device string ("cuda" or "cpu")
         dtype: Model dtype
         num_images: Number of images to process (None for all)
+        image_id: Specific image ID to process (e.g., '000000416104')
         save_captions: Whether to save captions to disk
         quantization_mode: Quantization mode (none, skip_vision_tower, full)
     """
@@ -45,8 +47,18 @@ def run_inference(
         if f.lower().endswith((".jpg", ".jpeg", ".png"))
     ]
 
-    subset = all_images_files[:num_images] if num_images else all_images_files
-    logger.info(f"Processing {len(subset)} images...")
+    # Handle specific image_id if provided
+    if image_id:
+        # Try to find the image file with this ID
+        matching_files = [f for f in all_images_files if os.path.splitext(f)[0] == image_id]
+        if not matching_files:
+            logger.error(f"Image with ID '{image_id}' not found in {config.IMAGES_DIR}")
+            return
+        subset = matching_files
+        logger.info(f"Processing single image: {image_id}")
+    else:
+        subset = all_images_files[:num_images] if num_images else all_images_files
+        logger.info(f"Processing {len(subset)} images...")
 
     predictions = []
     per_image_latencies = []

@@ -43,6 +43,12 @@ signal.signal(signal.SIGINT, cleanup_and_exit)
     help="Number of images to process (use 0 for all images)",
 )
 @click.option(
+    "--image-id", "-i",
+    type=str,
+    default=None,
+    help="Specific image ID to process (e.g., '000000416104')",
+)
+@click.option(
     "--device", "-d",
     type=click.Choice(["auto", "cuda", "cpu"], case_sensitive=False),
     default="auto",
@@ -53,7 +59,7 @@ signal.signal(signal.SIGINT, cleanup_and_exit)
     is_flag=True,
     help="Save captions to disk",
 )
-def main(quantization, num_images, device, save_captions):
+def main(quantization, num_images, image_id, device, save_captions):
     """Run model based on quantization mode configuration."""
     # Ensure dataset is downloaded
     download_coco()
@@ -62,7 +68,12 @@ def main(quantization, num_images, device, save_captions):
     # Convert num_images: 0 means all images (None)
     num_images = None if num_images == 0 else num_images
 
-    logger.info(f"Starting inference - Quantization: {quantization}, Device: {device}, Images: {num_images or 'all'}")
+    # Handle image_id priority over num_images
+    if image_id and num_images:
+        logger.warning("Both --image-id and --num-images specified. Using --image-id only.")
+        num_images = None
+
+    logger.info(f"Starting inference - Quantization: {quantization}, Device: {device}, Images: {image_id or num_images or 'all'}")
 
     # Load model with specified configuration
     processor, model, device_name, dtype = load_model(
@@ -77,6 +88,7 @@ def main(quantization, num_images, device, save_captions):
         device=device_name,
         dtype=dtype,
         num_images=num_images,
+        image_id=image_id,
         save_captions=save_captions,
         quantization_mode=quantization,
     )
