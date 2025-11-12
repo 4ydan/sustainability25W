@@ -124,6 +124,11 @@ def run_inference(
 
         logger.info(f"[{idx}/{len(subset)}] {fname} - {img_time:.2f}s, {num_tokens} tokens: {caption}")
 
+        # Clean up tensors to prevent memory accumulation
+        del image, inputs, output_ids, generated_ids
+        if device == "cuda":
+            torch.cuda.empty_cache()
+
     total_time = time.time() - overall_start
 
     metrics = compute_performance_metrics(
