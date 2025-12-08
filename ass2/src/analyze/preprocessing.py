@@ -1,4 +1,3 @@
-import pandas as pd
 import numpy as np
 from sklearn.preprocessing import StandardScaler, MinMaxScaler, RobustScaler
 
@@ -25,7 +24,10 @@ def impute_missing_values(df, strategy='mean', columns=None):
     df_imputed = df.copy()
 
     if columns is None:
-        columns = df_imputed.columns[df_imputed.isnull().any()].tolist()
+        # Exclude date components from imputation
+        exclude_cols = ['YYYY', 'MM', 'DD', 'DOY']
+        columns = [col for col in df_imputed.columns[df_imputed.isnull().any()].tolist()
+                   if col not in exclude_cols]
 
     for col in columns:
         if col not in df_imputed.columns:
@@ -95,7 +97,10 @@ def normalize_data(df, method='standard', columns=None):
     df_normalized = df.copy()
 
     if columns is None:
-        columns = df_normalized.select_dtypes(include=[np.number]).columns.tolist()
+        # Exclude date components from normalization
+        exclude_cols = ['YYYY', 'MM', 'DD', 'DOY']
+        columns = [col for col in df_normalized.select_dtypes(include=[np.number]).columns.tolist()
+                   if col not in exclude_cols]
 
     if not columns:
         print("No numeric columns found to normalize.")
@@ -133,7 +138,10 @@ def remove_outliers(df, columns=None, method='iqr', threshold=1.5):
     df_clean = df.copy()
 
     if columns is None:
-        columns = df_clean.select_dtypes(include=[np.number]).columns.tolist()
+        # Exclude date components from outlier removal
+        exclude_cols = ['YYYY', 'MM', 'DD', 'DOY']
+        columns = [col for col in df_clean.select_dtypes(include=[np.number]).columns.tolist()
+                   if col not in exclude_cols]
 
     initial_rows = len(df_clean)
 

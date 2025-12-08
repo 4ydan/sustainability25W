@@ -28,7 +28,11 @@ def perform_initial_inspection(df):
     print("\n" + "="*50 + "\n")
 
     print("### DataFrame Description ###")
-    print(df.describe())
+    # Exclude date components from description
+    exclude_cols = ['YYYY', 'MM', 'DD', 'DOY']
+    numeric_cols = [col for col in df.select_dtypes(include=[np.number]).columns
+                    if col not in exclude_cols]
+    print(df[numeric_cols].describe())
     print("\n" + "="*50 + "\n")
 
     print("### Missing Values per Column ###")
@@ -55,13 +59,18 @@ def analyze_null_values(df):
         print("DataFrame is empty, cannot analyze null values.")
         return pd.DataFrame()
 
-    total_rows = len(df)
-    null_counts = df.isnull().sum()
+    # Exclude date components from null analysis
+    exclude_cols = ['YYYY', 'MM', 'DD', 'DOY']
+    analysis_cols = [col for col in df.columns if col not in exclude_cols]
+    df_analysis = df[analysis_cols]
+
+    total_rows = len(df_analysis)
+    null_counts = df_analysis.isnull().sum()
     null_percentages = (null_counts / total_rows) * 100
-    dtypes = df.dtypes
+    dtypes = df_analysis.dtypes
 
     null_summary = pd.DataFrame({
-        'Column': df.columns,
+        'Column': df_analysis.columns,
         'Null_Count': null_counts.values,
         'Null_Percentage': null_percentages.values,
         'Data_Type': dtypes.values
@@ -71,7 +80,7 @@ def analyze_null_values(df):
 
     print("### NULL VALUE ANALYSIS ###\n")
     print(f"Total rows: {total_rows}")
-    print(f"Total columns: {len(df.columns)}")
+    print(f"Total columns: {len(df_analysis.columns)} (excluding date components)")
     print(f"Columns with missing values: {(null_counts > 0).sum()}\n")
     print(null_summary.to_string(index=False))
 
@@ -96,7 +105,10 @@ def detect_outliers(df, columns=None, method='iqr', threshold=1.5):
         return {}
 
     if columns is None:
-        columns = df.select_dtypes(include=[np.number]).columns.tolist()
+        # Exclude date components from analysis
+        exclude_cols = ['YYYY', 'MM', 'DD', 'DOY']
+        columns = [col for col in df.select_dtypes(include=[np.number]).columns.tolist()
+                   if col not in exclude_cols]
 
     outliers = {}
 
@@ -146,7 +158,10 @@ def test_normality(df, columns=None, alpha=0.05):
         return pd.DataFrame()
 
     if columns is None:
-        columns = df.select_dtypes(include=[np.number]).columns.tolist()
+        # Exclude date components from analysis
+        exclude_cols = ['YYYY', 'MM', 'DD', 'DOY']
+        columns = [col for col in df.select_dtypes(include=[np.number]).columns.tolist()
+                   if col not in exclude_cols]
 
     results = []
 
@@ -194,7 +209,10 @@ def calculate_skewness_kurtosis(df, columns=None):
         return pd.DataFrame()
 
     if columns is None:
-        columns = df.select_dtypes(include=[np.number]).columns.tolist()
+        # Exclude date components from analysis
+        exclude_cols = ['YYYY', 'MM', 'DD', 'DOY']
+        columns = [col for col in df.select_dtypes(include=[np.number]).columns.tolist()
+                   if col not in exclude_cols]
 
     results = []
 

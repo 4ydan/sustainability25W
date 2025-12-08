@@ -4,7 +4,7 @@ import pandas as pd
 
 def load_random_files(data_path, num_files=100, seed=None):
     """
-    Loads a specified number of random CSV files from a directory into a single DataFrame.
+    Loads a specified number of random CSV files from the LamaH basin dataset.
 
     Args:
         data_path (str): The path to the directory containing the CSV files.
@@ -44,7 +44,6 @@ def load_random_files(data_path, num_files=100, seed=None):
             df_loc = pd.read_csv(file_path, delimiter=';')
             df_loc['date'] = pd.to_datetime(df_loc[['YYYY', 'MM', 'DD']].rename(columns={'YYYY': 'year', 'MM': 'month', 'DD': 'day'}))
             df_loc = df_loc.set_index('date')
-            df_loc = df_loc.rename(columns={'qobs': 'runoff_obs'})
             df_loc['location_id'] = location_id
             dfs.append(df_loc)
         except Exception as e:

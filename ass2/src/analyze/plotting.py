@@ -54,8 +54,13 @@ def plot_correlation_heatmap(df, title='Correlation Heatmap'):
         df (pandas.DataFrame): The DataFrame containing the data.
         title (str, optional): The title for the plot. Defaults to 'Correlation Heatmap'.
     """
+    # Exclude date components from correlation analysis
+    exclude_cols = ['YYYY', 'MM', 'DD', 'DOY']
+    numeric_cols = [col for col in df.select_dtypes(include=[np.number]).columns
+                    if col not in exclude_cols]
+
     plt.figure(figsize=(12, 10))
-    corr = df.corr(numeric_only=True)
+    corr = df[numeric_cols].corr()
     sns.heatmap(corr, annot=True, fmt=".2f", cmap='coolwarm')
     plt.title(title)
     plt.show()
@@ -86,7 +91,10 @@ def plot_distribution_grid(df, columns=None, bins=30):
         bins (int): Number of bins for histograms.
     """
     if columns is None:
-        columns = df.select_dtypes(include=[np.number]).columns.tolist()
+        # Exclude date components from analysis
+        exclude_cols = ['YYYY', 'MM', 'DD', 'DOY']
+        columns = [col for col in df.select_dtypes(include=[np.number]).columns.tolist()
+                   if col not in exclude_cols]
 
     n_cols = len(columns)
     if n_cols == 0:
@@ -119,7 +127,10 @@ def plot_boxplot_grid(df, columns=None):
         columns (list, optional): List of columns to plot. If None, plots all numeric columns.
     """
     if columns is None:
-        columns = df.select_dtypes(include=[np.number]).columns.tolist()
+        # Exclude date components from analysis
+        exclude_cols = ['YYYY', 'MM', 'DD', 'DOY']
+        columns = [col for col in df.select_dtypes(include=[np.number]).columns.tolist()
+                   if col not in exclude_cols]
 
     n_cols = len(columns)
     if n_cols == 0:
@@ -151,7 +162,10 @@ def plot_qq_plots(df, columns=None):
         columns (list, optional): Columns to plot. If None, plots all numeric columns.
     """
     if columns is None:
-        columns = df.select_dtypes(include=[np.number]).columns.tolist()
+        # Exclude date components from analysis
+        exclude_cols = ['YYYY', 'MM', 'DD', 'DOY']
+        columns = [col for col in df.select_dtypes(include=[np.number]).columns.tolist()
+                   if col not in exclude_cols]
 
     n_cols = len(columns)
     if n_cols == 0:
@@ -272,7 +286,10 @@ def plot_pairwise_relationships(df, columns=None):
         columns (list, optional): Columns to include. If None, uses all numeric columns.
     """
     if columns is None:
-        columns = df.select_dtypes(include=[np.number]).columns.tolist()[:5]
+        # Exclude date components from pairplot
+        exclude_cols = ['YYYY', 'MM', 'DD', 'DOY']
+        columns = [col for col in df.select_dtypes(include=[np.number]).columns.tolist()
+                   if col not in exclude_cols][:5]
 
     if len(columns) < 2:
         print("Need at least 2 columns for pairplot.")
