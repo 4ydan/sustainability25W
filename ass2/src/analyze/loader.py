@@ -2,18 +2,21 @@ import os
 import random
 import pandas as pd
 
-def load_random_files(data_path, num_files=100):
+def load_random_files(data_path, num_files=100, seed=None):
     """
     Loads a specified number of random CSV files from a directory into a single DataFrame.
 
     Args:
         data_path (str): The path to the directory containing the CSV files.
         num_files (int): The number of random files to load.
+        seed (int, optional): Random seed for reproducibility. Default is None.
 
     Returns:
         pandas.DataFrame: A single concatenated DataFrame containing the data from
                           the selected files, or an empty DataFrame if no files are found.
     """
+    if seed is not None:
+        random.seed(seed)
     if not os.path.exists(data_path):
         print(f"Error: Data path does not exist: {data_path}")
         return pd.DataFrame()
@@ -39,7 +42,7 @@ def load_random_files(data_path, num_files=100):
         location_id = os.path.splitext(file_name)[0]
         try:
             df_loc = pd.read_csv(file_path, delimiter=';')
-            df_loc['date'] = pd.to_datetime(df_loc[['YYYY', 'MM', 'DD']])
+            df_loc['date'] = pd.to_datetime(df_loc[['YYYY', 'MM', 'DD']].rename(columns={'YYYY': 'year', 'MM': 'month', 'DD': 'day'}))
             df_loc = df_loc.set_index('date')
             df_loc = df_loc.rename(columns={'qobs': 'runoff_obs'})
             df_loc['location_id'] = location_id
